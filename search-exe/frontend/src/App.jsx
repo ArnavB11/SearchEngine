@@ -5,7 +5,9 @@ import DinoGame from './components/DinoGame';
 
 function App() {
   const [playDino, setPlayDino] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   // The History Stack System
   const [history, setHistory] = useState([{ view: 'home', data: null }]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -26,15 +28,33 @@ function App() {
 
   // API Handlers
   const handleSearch = async (query) => {
-    const response = await fetch(`http://localhost:5000/api/search?q=${query}`);
-    const data = await response.json();
-    navigate({ view: 'results', data: data.results, query: query });
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      if (!response.ok) throw new Error(`Search failed (${response.status})`);
+      const data = await response.json();
+      navigate({ view: 'results', data: data.results, query: query });
+    } catch {
+      setError('Could not reach the search backend. Make sure it is running on port 5000.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFileClick = async (filename) => {
-    const response = await fetch(`http://localhost:5000/api/file/${filename}`);
-    const data = await response.json();
-    navigate({ view: 'file', data: data });
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/file/${encodeURIComponent(filename)}`);
+      if (!response.ok) throw new Error(`File fetch failed (${response.status})`);
+      const data = await response.json();
+      navigate({ view: 'file', data: data });
+    } catch {
+      setError('Could not load that file. Make sure the backend is running on port 5000.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -87,12 +107,29 @@ function App() {
       {/* Modal Game Panel */}
       {playDino && <DinoGame onClose={() => setPlayDino(false)} />}
 
+      {/* Error Banner */}
+      {error && (
+        <div style={{ width: '600px', maxWidth: '100%', margin: '10px 0', padding: '12px 16px', backgroundColor: '#fce8e6', color: '#c5221f', borderRadius: '8px', fontSize: '14px' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Loading Indicator */}
+      {isLoading && (
+        <p style={{ color: '#70757a', fontSize: '14px' }}>Searching…</p>
+      )}
+
       {/* Search Results View */}
       {currentView.view === 'results' && (
         <div style={{ width: '600px', maxWidth: '100%', alignSelf: 'flex-start', marginLeft: '10%' }}>
           <p style={{ color: '#70757a', fontSize: '14px' }}>Found {currentView.data.length} results for "{currentView.query}"</p>
-          {currentView.data.map((result, index) => (
-            <div key={index} style={{ marginBottom: '25px' }}>
+          {currentView.data.length === 0 && (
+            <p style={{ color: '#4d5156' }}>
+              No documents matched your search. Try a different keyword.
+            </p>
+          )}
+          {currentView.data.map((result) => (
+            <div key={result.filename} style={{ marginBottom: '25px' }}>
               <span style={{ fontSize: '14px', color: '#202124' }}>data/{result.filename}</span>
               <h3 
                 onClick={() => handleFileClick(result.filename)}

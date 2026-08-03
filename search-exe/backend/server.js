@@ -7,40 +7,56 @@ const path = require('path');
 const app = express();
 app.use(cors());
 
-// Helper function to read our "database"
+const indexPath = path.join(__dirname, 'searchIndex.json');
+
+// Cache the index in memory; reload only when the file changes on disk
+let cachedIndex = [];
+let cachedMtime = 0;
 const getIndex = () => {
-  const indexPath = path.join(__dirname, 'searchIndex.json');
-  if (!fs.existsSync(indexPath)) return [];
-  return JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+  try {
+    const { mtimeMs } = fs.statSync(indexPath);
+    if (mtimeMs !== cachedMtime) {
+      cachedIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+      cachedMtime = mtimeMs;
+    }
+  } catch {
+    // Missing or corrupt index file — serve an empty index instead of crashing
+    cachedIndex = [];
+    cachedMtime = 0;
+  }
+  return cachedIndex;
 };
 
 // Search Endpoint
 app.get('/api/search', (req, res) => {
-  const query = req.query.q.toLowerCase();
-  const index = getIndex();
-  
+  const raw = req.query.q;
+  const query = String(Array.isArray(raw) ? raw[0] : raw || '').trim().toLowerCase();
+  if (!query) return res.json({ results: [] });
+
   // Search through filename OR content
-  const results = index.filter(item => 
-    item.filename.toLowerCase().includes(query) || 
-    item.content.toLowerCase().includes(query)
-  ).map(item => ({ 
-    filename: item.filename, 
-    summary: item.summary 
-  })); 
-  
+  const results = getIndex()
+    .filter(item =>
+      item.filename.toLowerCase().includes(query) ||
+      item.content.toLowerCase().includes(query)
+    )
+    .map(item => ({
+      filename: item.filename,
+      summary: item.summary
+    }));
+
   res.json({ results });
 });
 
 // Fetch Single File Details Endpoint
 app.get('/api/file/:filename', (req, res) => {
-  const index = getIndex();
-  const file = index.find(f => f.filename === req.params.filename);
-  
+  const file = getIndex().find(f => f.filename === req.params.filename);
+
   if (file) {
     res.json(file);
   } else {
-    res.status(404).json({ error: "File not found" });
+    res.status(404).json({ error: 'File not found' });
   }
 });
 
-app.listen(5000, () => console.log('Backend running on port 5000'));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));

@@ -8,7 +8,7 @@ export default function SearchBar({ onSearch }) {
   const handleSearch = (e) => {
     e.preventDefault();
     if (query.trim()) {
-      onSearch(query);
+      onSearch(query.trim());
     }
   };
 
@@ -44,8 +44,9 @@ export default function SearchBar({ onSearch }) {
         </span>
 
         {/* The Actual Input Field */}
-        <input 
-          type="text" 
+        <input
+          type="text"
+          aria-label="Search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
