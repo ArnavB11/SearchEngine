@@ -154,11 +154,6 @@ export default function App() {
       {current.view === 'home' && (
         <main className="home">
           <Logo />
-          <p className="tagline">
-            A search engine built from scratch: inverted index, TF-IDF ranking,
-            fuzzy spell correction.
-          </p>
-
           <SearchBar onSearch={runSearch} />
 
           <div className="button-row">
@@ -201,7 +196,7 @@ export default function App() {
               </p>
 
               <div className="doc__summary">
-                <strong>Extracted summary</strong>
+                <strong>Summary</strong>
                 <p>{current.doc.summary}</p>
               </div>
 

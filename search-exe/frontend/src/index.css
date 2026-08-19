@@ -82,8 +82,20 @@ button {
 .page {
   width: 100%;
   max-width: 660px;
-  margin: 0 auto;
+  /* Left-aligned, not centred: results line up under the search box in the
+     header rather than floating in the middle of the window. 160px + the 20px
+     padding starts the text at 180px, roughly where the header's search bar
+     begins. */
+  margin: 0 0 0 160px;
   padding: 24px 20px 64px;
+}
+
+/* On anything narrower there is no room for the indent, so fall back to the
+   full width of the window. */
+@media (max-width: 1000px) {
+  .page {
+    margin-left: 0;
+  }
 }
 
 /* Landing page: search box parked a little above centre, as Google does. */
@@ -176,10 +188,14 @@ button {
   /* Each letter drops in slightly after the one before it; the per-letter
      delay is set inline in Logo.jsx. */
   animation: letter-drop 500ms var(--ease) backwards;
+  /* Hover is a transition, not a second animation. Overriding `animation` on
+     :hover meant that un-hovering fell back to letter-drop and replayed the
+     whole entrance, so letters dropped in again every time the pointer left. */
+  transition: transform 180ms var(--ease);
 }
 
 .logo__letter:hover {
-  animation: letter-bounce 400ms var(--ease);
+  transform: translateY(-8px) scale(1.08);
 }
 
 .logo__suffix {
@@ -195,19 +211,6 @@ button {
     opacity: 1;
     transform: none;
   }
-}
-
-@keyframes letter-bounce {
-  50% {
-    transform: translateY(-10px) scale(1.12);
-  }
-}
-
-.tagline {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 14px;
-  text-align: center;
 }
 
 /* ---------------------------------------------------------------------------

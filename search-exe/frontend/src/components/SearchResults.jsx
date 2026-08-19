@@ -65,8 +65,7 @@ export default function SearchResults({ search, onOpenFile, onSearch, onPageChan
       {total === 0 && (
         <div className="empty">
           <div className="empty__icon">🔍</div>
-          <p>Nothing in the index matched that.</p>
-          <p style={{ fontSize: 13 }}>Try "react", "tf-idf", or "event loop".</p>
+          <p>No documents matched.</p>
         </div>
       )}
 

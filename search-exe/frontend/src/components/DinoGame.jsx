@@ -117,7 +117,6 @@ export default function DinoGame({ onClose }) {
 
         <p className="game-hint">
           <kbd>Space</kbd> jump &middot; <kbd>&darr;</kbd> duck &middot; <kbd>Esc</kbd> close
-          &mdash; keep running to reach nightfall
         </p>
       </div>
     </div>
