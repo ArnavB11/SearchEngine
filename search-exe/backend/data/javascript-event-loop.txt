@@ -1,0 +1,5 @@
+JavaScript runs on a single thread, so it cannot block while waiting for a file or a network response. Instead the runtime keeps a call stack and a set of queues, and the event loop moves work between them.
+
+When the call stack empties, the event loop takes the next callback from a queue and runs it. Promise callbacks live in the microtask queue, which is drained completely before anything else. Timers and IO callbacks live in the macrotask queue. This is why a promise resolved immediately still runs after all synchronous code, but before a setTimeout of zero milliseconds.
+
+Async and await are syntax over promises, not extra threads. An awaited expression suspends the surrounding function and returns control to the event loop, so other work proceeds while the awaited operation is pending. A long synchronous loop, by contrast, blocks everything, including rendering, because there is only one thread to block.

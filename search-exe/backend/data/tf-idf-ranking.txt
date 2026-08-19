@@ -1,0 +1,5 @@
+TF-IDF stands for term frequency times inverse document frequency. It answers a question a plain keyword match cannot: of all the documents containing this word, which ones are actually about it?
+
+Term frequency counts how often a term appears in one document. Raw counts favour long documents, so the count is normally divided by the document length. Inverse document frequency measures rarity across the whole corpus, usually as the logarithm of the total document count divided by the number of documents containing the term.
+
+Multiplying the two gives a score that is high when a word is frequent here and rare everywhere else. A word appearing in every document gets an inverse document frequency near zero and contributes almost nothing to the ranking. Summing the scores of every query term produces the final relevance score used to sort results. Modern engines use BM25, a refinement that saturates term frequency so repeating a word a hundred times stops helping.

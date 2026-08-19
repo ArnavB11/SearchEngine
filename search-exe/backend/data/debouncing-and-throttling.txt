@@ -1,0 +1,5 @@
+Debouncing and throttling both limit how often a function runs in response to rapid events, but they behave differently. Debouncing waits until the events stop: the timer restarts on every call, so the function runs once, after a quiet period. Throttling runs the function at most once per interval, no matter how many events arrive.
+
+A search autocomplete box wants debouncing. Firing a request on every keystroke sends a request per character, wastes bandwidth, and can render responses out of order when a slow early request resolves after a fast later one. Waiting roughly 150 to 250 milliseconds after the last keystroke sends one request for the finished word.
+
+In React the implementation is a useEffect whose cleanup function clears the timer. Because cleanup runs before the next effect, each new keystroke cancels the pending timeout, and only the final one survives to fire the request.

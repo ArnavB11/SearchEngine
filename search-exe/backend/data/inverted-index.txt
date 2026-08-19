@@ -1,0 +1,5 @@
+An inverted index is the data structure that makes full-text search fast. A forward index maps each document to the words it contains. An inverted index flips that around: it maps each word to the list of documents that contain it, which is exactly the question a search query asks.
+
+Building one is a two pass job. First tokenize every document into lowercase words, dropping punctuation and very common stopwords such as the and and. Then, for each token, append the document id to that token posting list along with how many times the word appeared.
+
+A query for react components looks up two posting lists and unions them, instead of scanning every document. Lookup cost stops depending on the size of the corpus and starts depending only on how many documents actually contain the word. That is why search engines index offline and query online.

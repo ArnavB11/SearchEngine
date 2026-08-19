@@ -1,0 +1,5 @@
+Hooks let a React function component hold state and run side effects without being rewritten as a class. useState returns the current value and a setter; calling the setter schedules a re-render rather than mutating the value in place.
+
+useEffect runs code after the render is painted. Its dependency array controls when it runs again: an empty array means run once on mount, a populated array means run whenever one of those values changes, and no array at all means run after every render. Returning a function from an effect registers cleanup, which React calls before the next run and on unmount. Forgetting to cancel a timer or remove an event listener there is the most common source of React memory leaks.
+
+useRef stores a mutable box whose changes do not trigger a re-render, which makes it the right tool for holding a canvas element, an animation frame id, or any value a game loop mutates every frame.

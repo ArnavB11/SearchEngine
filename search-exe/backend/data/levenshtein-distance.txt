@@ -1,0 +1,5 @@
+Levenshtein distance, also called edit distance, is the minimum number of single character insertions, deletions or substitutions needed to turn one string into another. Turning kitten into sitting takes three edits, so their distance is three.
+
+The standard solution is dynamic programming. Build a table where cell i,j holds the distance between the first i characters of one string and the first j of the other. Each cell is one plus the minimum of the cell above, the cell to the left, and the diagonal cell, where the diagonal costs nothing if the two characters match. The answer sits in the bottom right corner.
+
+The table needs quadratic time, but only two rows of memory, because each row depends only on the row above it. Search engines use edit distance for spelling correction: when a query word is missing from the index, the closest vocabulary word within one or two edits becomes the did you mean suggestion.
