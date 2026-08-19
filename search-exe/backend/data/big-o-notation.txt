@@ -1,0 +1,5 @@
+Big O notation describes how the running time or memory of an algorithm grows as the input grows, ignoring constants and small inputs. It answers what happens when n gets large, not how many milliseconds something takes on one machine.
+
+Common classes, from fastest to slowest: constant time such as a hash map lookup, logarithmic time such as binary search, linear time such as scanning an array, linearithmic time which is the bound for comparison sorting, quadratic time such as a nested loop over the same array, and exponential time which is only usable on tiny inputs.
+
+The reason a search engine builds an inverted index is precisely this analysis. Scanning every document for every query is linear in the size of the whole corpus. A hash map from word to posting list turns the lookup into a constant time operation followed by work proportional only to the number of matching documents.

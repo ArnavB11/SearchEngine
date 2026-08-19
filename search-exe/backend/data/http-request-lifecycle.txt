@@ -1,0 +1,5 @@
+When a browser requests a page, DNS resolves the hostname to an IP address, a TCP connection is opened, TLS negotiates encryption for https, and only then is the HTTP request sent. The response arrives with a status code, headers and a body.
+
+Status codes fall into families. 200 means success, 301 and 302 are redirects, 400 means the client sent something invalid, 404 means the resource does not exist, and 500 means the server itself failed. Treating a 404 as a network error is a common frontend bug: fetch only rejects when the request could not be made at all, so a failed response still needs an explicit check of the ok property.
+
+Same origin policy blocks a page on one origin from reading a response from another. CORS is the way a server opts in, using an Access-Control-Allow-Origin header. A development proxy sidesteps the issue entirely by making the browser believe the API lives on the same origin as the app.

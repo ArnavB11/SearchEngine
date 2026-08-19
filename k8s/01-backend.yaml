@@ -1,0 +1,156 @@
+# ---------------------------------------------------------------------------
+# The search API.
+#
+# The central idea of Kubernetes is DECLARATIVE state: this file describes what
+# should be true, not steps to make it true. A controller continuously compares
+# the cluster against it and closes the gap. Delete a pod and one reappears, not
+# because anything reacted to the deletion, but because two replicas were asked
+# for and only one exists.
+# ---------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: search-exe
+  labels:
+    app.kubernetes.io/name: search-exe
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 2
+
+  # How the Deployment finds the pods it owns. Labels, not names - which is the
+  # only way anything in Kubernetes refers to a group of things.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: search-exe
+      app.kubernetes.io/component: backend
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Never drop below the requested replica count during a deploy: bring up a
+      # new pod, wait for it to pass its readiness probe, then retire an old one.
+      # That is a zero-downtime rollout, and it only works because readiness is
+      # defined properly below.
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: search-exe
+        app.kubernetes.io/component: backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000    # the `node` user baked into the image
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: backend
+          # A concrete version, never `latest`. With `latest` there is no way to
+          # tell what is running, and no way to roll back to what was.
+          image: search-exe-backend:0.2.0
+          # For a local cluster the image is loaded straight into the node, so
+          # don't try to pull it from a registry that has never heard of it.
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 5000
+
+          env:
+            - name: PORT
+              value: "5000"
+
+          # requests are what the scheduler reserves when picking a node, and
+          # what the autoscaler measures utilisation against. limits are the
+          # ceiling: exceed the CPU limit and the process is throttled, exceed
+          # the memory limit and it is killed. Omitting requests entirely is the
+          # usual reason a cluster ends up overcommitted and unpredictable.
+          resources:
+            requests:
+              cpu: 50m        # 0.05 of a core
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+
+          # Liveness: is the process wedged? Failing this RESTARTS the container.
+          # It hits /api/health, which checks nothing but its own existence -
+          # a liveness probe that depends on anything external turns a
+          # dependency's outage into a cluster-wide restart loop.
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            failureThreshold: 3
+
+          # Readiness: can this pod serve a search right now? Failing this
+          # REMOVES the pod from the Service's endpoints - no restart, no
+          # traffic, and it is added straight back when it recovers. /api/ready
+          # returns 503 until the index is loaded.
+          #
+          # This distinction is what makes the rolling update above safe: a new
+          # pod receives no traffic until it says it is ready.
+          readinessProbe:
+            httpGet:
+              path: /api/ready
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 2
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+
+          # readOnlyRootFilesystem means nothing can be written anywhere, so
+          # give the process the one writable path it might want. An emptyDir
+          # lives and dies with the pod.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+      # SIGTERM, then this long to finish in-flight requests before SIGKILL.
+      terminationGracePeriodSeconds: 15
+
+---
+# ---------------------------------------------------------------------------
+# A Service is a stable name and virtual IP in front of a changing set of pods.
+#
+# Pods are disposable and their IPs change constantly. Nothing should ever
+# address a pod directly. The Service watches the label selector, keeps a list
+# of ready pod IPs, and load-balances across them - so the frontend can just
+# talk to "http://backend:5000" forever.
+#
+# ClusterIP means reachable only from inside the cluster, which is right for an
+# API that the browser never calls directly. Only the Ingress is public.
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: search-exe
+  labels:
+    app.kubernetes.io/name: search-exe
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: search-exe
+    app.kubernetes.io/component: backend
+  ports:
+    - name: http
+      port: 5000        # the port the Service listens on
+      targetPort: http  # the container port, by name, so renumbering it here is enough

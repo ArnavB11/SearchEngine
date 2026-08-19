@@ -1,12 +1,2186 @@
-[
-  {
-    "filename": "node-info.txt",
-    "content": "Node.js is a cross-platform, open-source JavaScript runtime environment. It executes JavaScript code outside a web browser, allowing developers to use JavaScript to write command line tools and server-side scripts.\r\n",
-    "summary": "Node.js is a cross-platform, open-source JavaScript runtime environment. It executes JavaScript code..."
-  },
-  {
-    "filename": "react-info.txt",
-    "content": "React is a JavaScript library for building user interfaces. It lets you compose complex UIs from small and isolated pieces of code called components. It is incredibly popular for single-page applications.\r\n",
-    "summary": "React is a JavaScript library for building user interfaces. It lets you compose complex UIs from sma..."
+{
+  "documents": [
+    {
+      "filename": "big-o-notation.txt",
+      "title": "Big O Notation",
+      "content": "Big O notation describes how the running time or memory of an algorithm grows as the input grows, ignoring constants and small inputs. It answers what happens when n gets large, not how many milliseconds something takes on one machine.\n\nCommon classes, from fastest to slowest: constant time such as a hash map lookup, logarithmic time such as binary search, linear time such as scanning an array, linearithmic time which is the bound for comparison sorting, quadratic time such as a nested loop over the same array, and exponential time which is only usable on tiny inputs.\n\nThe reason a search engine builds an inverted index is precisely this analysis. Scanning every document for every query is linear in the size of the whole corpus. A hash map from word to posting list turns the lookup into a constant time operation followed by work proportional only to the number of matching documents.",
+      "wordCount": 152
+    },
+    {
+      "filename": "canvas-game-loop.txt",
+      "title": "Canvas Game Loop",
+      "content": "An HTML canvas animation is a loop that clears the frame, updates the world, and draws it again. requestAnimationFrame is the browser API for scheduling that loop; it fires just before the next repaint and pauses automatically when the tab is hidden, which setInterval does not.\n\nThe important detail is delta time. If positions move by a fixed number of pixels per frame, the game runs twice as fast on a 120hz monitor as on a 60hz one. Measuring the milliseconds elapsed since the previous frame and multiplying every movement by that value makes the speed depend on real time instead of refresh rate.\n\nJump physics need only two variables: a vertical velocity and a gravity constant. Jumping sets the velocity to a negative number, every frame adds gravity to the velocity and the velocity to the position, and landing is the moment the position crosses the ground line. That is the whole simulation behind the T-Rex runner.",
+      "wordCount": 159
+    },
+    {
+      "filename": "debouncing-and-throttling.txt",
+      "title": "Debouncing And Throttling",
+      "content": "Debouncing and throttling both limit how often a function runs in response to rapid events, but they behave differently. Debouncing waits until the events stop: the timer restarts on every call, so the function runs once, after a quiet period. Throttling runs the function at most once per interval, no matter how many events arrive.\n\nA search autocomplete box wants debouncing. Firing a request on every keystroke sends a request per character, wastes bandwidth, and can render responses out of order when a slow early request resolves after a fast later one. Waiting roughly 150 to 250 milliseconds after the last keystroke sends one request for the finished word.\n\nIn React the implementation is a useEffect whose cleanup function clears the timer. Because cleanup runs before the next effect, each new keystroke cancels the pending timeout, and only the final one survives to fire the request.",
+      "wordCount": 146
+    },
+    {
+      "filename": "express-middleware.txt",
+      "title": "Express Middleware",
+      "content": "Express is a minimal web framework for Node.js. An Express app is essentially an ordered list of middleware functions, each receiving the request, the response, and a next callback. A middleware can inspect or modify the request, send a response, or call next to hand control to the following function.\n\nOrder matters. A logger registered before the routes sees every request; one registered after them only sees requests no route handled. Body parsers, CORS headers, and authentication checks are all just middleware placed before the handlers that depend on them.\n\nRoute handlers are middleware that end the chain by sending a response. Anything registered after all routes acts as a fallback, which is how 404 pages and error handlers are built. An error handling middleware is recognised by taking four arguments instead of three.",
+      "wordCount": 135
+    },
+    {
+      "filename": "http-request-lifecycle.txt",
+      "title": "Http Request Lifecycle",
+      "content": "When a browser requests a page, DNS resolves the hostname to an IP address, a TCP connection is opened, TLS negotiates encryption for https, and only then is the HTTP request sent. The response arrives with a status code, headers and a body.\n\nStatus codes fall into families. 200 means success, 301 and 302 are redirects, 400 means the client sent something invalid, 404 means the resource does not exist, and 500 means the server itself failed. Treating a 404 as a network error is a common frontend bug: fetch only rejects when the request could not be made at all, so a failed response still needs an explicit check of the ok property.\n\nSame origin policy blocks a page on one origin from reading a response from another. CORS is the way a server opts in, using an Access-Control-Allow-Origin header. A development proxy sidesteps the issue entirely by making the browser believe the API lives on the same origin as the app.",
+      "wordCount": 166
+    },
+    {
+      "filename": "inverted-index.txt",
+      "title": "Inverted Index",
+      "content": "An inverted index is the data structure that makes full-text search fast. A forward index maps each document to the words it contains. An inverted index flips that around: it maps each word to the list of documents that contain it, which is exactly the question a search query asks.\n\nBuilding one is a two pass job. First tokenize every document into lowercase words, dropping punctuation and very common stopwords such as the and and. Then, for each token, append the document id to that token posting list along with how many times the word appeared.\n\nA query for react components looks up two posting lists and unions them, instead of scanning every document. Lookup cost stops depending on the size of the corpus and starts depending only on how many documents actually contain the word. That is why search engines index offline and query online.",
+      "wordCount": 147
+    },
+    {
+      "filename": "javascript-event-loop.txt",
+      "title": "Javascript Event Loop",
+      "content": "JavaScript runs on a single thread, so it cannot block while waiting for a file or a network response. Instead the runtime keeps a call stack and a set of queues, and the event loop moves work between them.\n\nWhen the call stack empties, the event loop takes the next callback from a queue and runs it. Promise callbacks live in the microtask queue, which is drained completely before anything else. Timers and IO callbacks live in the macrotask queue. This is why a promise resolved immediately still runs after all synchronous code, but before a setTimeout of zero milliseconds.\n\nAsync and await are syntax over promises, not extra threads. An awaited expression suspends the surrounding function and returns control to the event loop, so other work proceeds while the awaited operation is pending. A long synchronous loop, by contrast, blocks everything, including rendering, because there is only one thread to block.",
+      "wordCount": 152
+    },
+    {
+      "filename": "levenshtein-distance.txt",
+      "title": "Levenshtein Distance",
+      "content": "Levenshtein distance, also called edit distance, is the minimum number of single character insertions, deletions or substitutions needed to turn one string into another. Turning kitten into sitting takes three edits, so their distance is three.\n\nThe standard solution is dynamic programming. Build a table where cell i,j holds the distance between the first i characters of one string and the first j of the other. Each cell is one plus the minimum of the cell above, the cell to the left, and the diagonal cell, where the diagonal costs nothing if the two characters match. The answer sits in the bottom right corner.\n\nThe table needs quadratic time, but only two rows of memory, because each row depends only on the row above it. Search engines use edit distance for spelling correction: when a query word is missing from the index, the closest vocabulary word within one or two edits becomes the did you mean suggestion.",
+      "wordCount": 158
+    },
+    {
+      "filename": "node-info.txt",
+      "title": "Node Info",
+      "content": "Node.js is a cross-platform, open-source JavaScript runtime environment. It executes JavaScript code outside a web browser, allowing developers to use JavaScript to write command line tools and server-side scripts.",
+      "wordCount": 33
+    },
+    {
+      "filename": "react-hooks.txt",
+      "title": "React Hooks",
+      "content": "Hooks let a React function component hold state and run side effects without being rewritten as a class. useState returns the current value and a setter; calling the setter schedules a re-render rather than mutating the value in place.\n\nuseEffect runs code after the render is painted. Its dependency array controls when it runs again: an empty array means run once on mount, a populated array means run whenever one of those values changes, and no array at all means run after every render. Returning a function from an effect registers cleanup, which React calls before the next run and on unmount. Forgetting to cancel a timer or remove an event listener there is the most common source of React memory leaks.\n\nuseRef stores a mutable box whose changes do not trigger a re-render, which makes it the right tool for holding a canvas element, an animation frame id, or any value a game loop mutates every frame.",
+      "wordCount": 160
+    },
+    {
+      "filename": "react-info.txt",
+      "title": "React Info",
+      "content": "React is a JavaScript library for building user interfaces. It lets you compose complex UIs from small and isolated pieces of code called components. It is incredibly popular for single-page applications.",
+      "wordCount": 32
+    },
+    {
+      "filename": "tf-idf-ranking.txt",
+      "title": "Tf Idf Ranking",
+      "content": "TF-IDF stands for term frequency times inverse document frequency. It answers a question a plain keyword match cannot: of all the documents containing this word, which ones are actually about it?\n\nTerm frequency counts how often a term appears in one document. Raw counts favour long documents, so the count is normally divided by the document length. Inverse document frequency measures rarity across the whole corpus, usually as the logarithm of the total document count divided by the number of documents containing the term.\n\nMultiplying the two gives a score that is high when a word is frequent here and rare everywhere else. A word appearing in every document gets an inverse document frequency near zero and contributes almost nothing to the ranking. Summing the scores of every query term produces the final relevance score used to sort results. Modern engines use BM25, a refinement that saturates term frequency so repeating a word a hundred times stops helping.",
+      "wordCount": 159
+    }
+  ],
+  "index": {
+    "150": {
+      "2": 1
+    },
+    "200": {
+      "4": 1
+    },
+    "250": {
+      "2": 1
+    },
+    "301": {
+      "4": 1
+    },
+    "302": {
+      "4": 1
+    },
+    "400": {
+      "4": 1
+    },
+    "404": {
+      "3": 1,
+      "4": 2
+    },
+    "500": {
+      "4": 1
+    },
+    "big": {
+      "0": 2
+    },
+    "notation": {
+      "0": 2
+    },
+    "describes": {
+      "0": 1
+    },
+    "how": {
+      "0": 2,
+      "2": 2,
+      "3": 1,
+      "5": 2,
+      "11": 1
+    },
+    "running": {
+      "0": 1
+    },
+    "time": {
+      "0": 8,
+      "1": 2,
+      "7": 1
+    },
+    "memory": {
+      "0": 1,
+      "7": 1,
+      "9": 1
+    },
+    "algorithm": {
+      "0": 1
+    },
+    "grows": {
+      "0": 2
+    },
+    "input": {
+      "0": 1
+    },
+    "ignoring": {
+      "0": 1
+    },
+    "constants": {
+      "0": 1
+    },
+    "small": {
+      "0": 1,
+      "10": 1
+    },
+    "inputs": {
+      "0": 2
+    },
+    "answers": {
+      "0": 1,
+      "11": 1
+    },
+    "what": {
+      "0": 1
+    },
+    "happens": {
+      "0": 1
+    },
+    "when": {
+      "0": 1,
+      "1": 1,
+      "2": 1,
+      "4": 2,
+      "6": 1,
+      "7": 1,
+      "9": 1,
+      "11": 1
+    },
+    "gets": {
+      "0": 1,
+      "11": 1
+    },
+    "large": {
+      "0": 1
+    },
+    "not": {
+      "0": 1,
+      "1": 1,
+      "4": 2,
+      "6": 1,
+      "9": 1
+    },
+    "many": {
+      "0": 1,
+      "2": 1,
+      "5": 2
+    },
+    "milliseconds": {
+      "0": 1,
+      "1": 1,
+      "2": 1,
+      "6": 1
+    },
+    "something": {
+      "0": 1,
+      "4": 1
+    },
+    "takes": {
+      "0": 1,
+      "6": 1,
+      "7": 1
+    },
+    "one": {
+      "0": 1,
+      "1": 1,
+      "2": 3,
+      "3": 1,
+      "4": 1,
+      "5": 1,
+      "6": 1,
+      "7": 4,
+      "9": 1,
+      "11": 1
+    },
+    "machine": {
+      "0": 1
+    },
+    "common": {
+      "0": 1,
+      "4": 1,
+      "5": 1,
+      "9": 1
+    },
+    "classes": {
+      "0": 1
+    },
+    "fastest": {
+      "0": 1
+    },
+    "slowest": {
+      "0": 1
+    },
+    "constant": {
+      "0": 2,
+      "1": 1
+    },
+    "such": {
+      "0": 4,
+      "5": 1
+    },
+    "hash": {
+      "0": 2
+    },
+    "map": {
+      "0": 2
+    },
+    "lookup": {
+      "0": 2,
+      "5": 1
+    },
+    "logarithmic": {
+      "0": 1
+    },
+    "binary": {
+      "0": 1
+    },
+    "search": {
+      "0": 2,
+      "2": 1,
+      "5": 3,
+      "7": 1
+    },
+    "linear": {
+      "0": 2
+    },
+    "scanning": {
+      "0": 2,
+      "5": 1
+    },
+    "array": {
+      "0": 2,
+      "9": 4
+    },
+    "linearithmic": {
+      "0": 1
+    },
+    "which": {
+      "0": 2,
+      "1": 1,
+      "3": 1,
+      "5": 1,
+      "6": 1,
+      "9": 2,
+      "11": 1
+    },
+    "bound": {
+      "0": 1
+    },
+    "comparison": {
+      "0": 1
+    },
+    "sorting": {
+      "0": 1
+    },
+    "quadratic": {
+      "0": 1,
+      "7": 1
+    },
+    "nested": {
+      "0": 1
+    },
+    "loop": {
+      "0": 1,
+      "1": 3,
+      "6": 5,
+      "9": 1
+    },
+    "over": {
+      "0": 1,
+      "6": 1
+    },
+    "same": {
+      "0": 1,
+      "4": 2
+    },
+    "exponential": {
+      "0": 1
+    },
+    "only": {
+      "0": 2,
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 2,
+      "5": 1,
+      "6": 1,
+      "7": 2
+    },
+    "usable": {
+      "0": 1
+    },
+    "tiny": {
+      "0": 1
+    },
+    "reason": {
+      "0": 1
+    },
+    "engine": {
+      "0": 1
+    },
+    "builds": {
+      "0": 1
+    },
+    "inverted": {
+      "0": 1,
+      "5": 3
+    },
+    "index": {
+      "0": 1,
+      "5": 5,
+      "7": 1
+    },
+    "precisely": {
+      "0": 1
+    },
+    "analysis": {
+      "0": 1
+    },
+    "every": {
+      "0": 2,
+      "1": 2,
+      "2": 2,
+      "3": 1,
+      "5": 2,
+      "9": 2,
+      "11": 2
+    },
+    "document": {
+      "0": 1,
+      "5": 4,
+      "11": 7
+    },
+    "query": {
+      "0": 1,
+      "5": 3,
+      "7": 1,
+      "11": 1
+    },
+    "size": {
+      "0": 1,
+      "5": 1
+    },
+    "whole": {
+      "0": 1,
+      "1": 1,
+      "11": 1
+    },
+    "corpus": {
+      "0": 1,
+      "5": 1,
+      "11": 1
+    },
+    "word": {
+      "0": 1,
+      "2": 1,
+      "5": 3,
+      "7": 2,
+      "11": 4
+    },
+    "posting": {
+      "0": 1,
+      "5": 2
+    },
+    "list": {
+      "0": 1,
+      "3": 1,
+      "5": 2
+    },
+    "turns": {
+      "0": 1
+    },
+    "into": {
+      "0": 1,
+      "4": 1,
+      "5": 1,
+      "7": 2
+    },
+    "operation": {
+      "0": 1,
+      "6": 1
+    },
+    "followed": {
+      "0": 1
+    },
+    "work": {
+      "0": 1,
+      "6": 2
+    },
+    "proportional": {
+      "0": 1
+    },
+    "number": {
+      "0": 1,
+      "1": 2,
+      "7": 1,
+      "11": 1
+    },
+    "matching": {
+      "0": 1
+    },
+    "documents": {
+      "0": 1,
+      "5": 2,
+      "11": 3
+    },
+    "canvas": {
+      "1": 2,
+      "9": 1
+    },
+    "game": {
+      "1": 2,
+      "9": 1
+    },
+    "html": {
+      "1": 1
+    },
+    "animation": {
+      "1": 1,
+      "9": 1
+    },
+    "clears": {
+      "1": 1,
+      "2": 1
+    },
+    "frame": {
+      "1": 4,
+      "9": 2
+    },
+    "updates": {
+      "1": 1
+    },
+    "world": {
+      "1": 1
+    },
+    "draws": {
+      "1": 1
+    },
+    "again": {
+      "1": 1,
+      "9": 1
+    },
+    "requestanimationframe": {
+      "1": 1
+    },
+    "browser": {
+      "1": 1,
+      "4": 2,
+      "8": 1
+    },
+    "api": {
+      "1": 1,
+      "4": 1
+    },
+    "scheduling": {
+      "1": 1
+    },
+    "fires": {
+      "1": 1
+    },
+    "just": {
+      "1": 1,
+      "3": 1
+    },
+    "before": {
+      "1": 1,
+      "2": 1,
+      "3": 2,
+      "6": 2,
+      "9": 1
+    },
+    "next": {
+      "1": 1,
+      "2": 1,
+      "3": 2,
+      "6": 1,
+      "9": 1
+    },
+    "repaint": {
+      "1": 1
+    },
+    "pauses": {
+      "1": 1
+    },
+    "automatically": {
+      "1": 1
+    },
+    "tab": {
+      "1": 1
+    },
+    "hidden": {
+      "1": 1
+    },
+    "setinterval": {
+      "1": 1
+    },
+    "does": {
+      "1": 1,
+      "4": 1
+    },
+    "important": {
+      "1": 1
+    },
+    "detail": {
+      "1": 1
+    },
+    "delta": {
+      "1": 1
+    },
+    "if": {
+      "1": 1,
+      "7": 1
+    },
+    "positions": {
+      "1": 1
+    },
+    "move": {
+      "1": 1
+    },
+    "fixed": {
+      "1": 1
+    },
+    "pixels": {
+      "1": 1
+    },
+    "per": {
+      "1": 1,
+      "2": 2
+    },
+    "runs": {
+      "1": 1,
+      "2": 4,
+      "6": 3,
+      "9": 2
+    },
+    "twice": {
+      "1": 1
+    },
+    "fast": {
+      "1": 1,
+      "2": 1,
+      "5": 1
+    },
+    "120hz": {
+      "1": 1
+    },
+    "monitor": {
+      "1": 1
+    },
+    "60hz": {
+      "1": 1
+    },
+    "measuring": {
+      "1": 1
+    },
+    "elapsed": {
+      "1": 1
+    },
+    "since": {
+      "1": 1
+    },
+    "previous": {
+      "1": 1
+    },
+    "multiplying": {
+      "1": 1,
+      "11": 1
+    },
+    "movement": {
+      "1": 1
+    },
+    "value": {
+      "1": 1,
+      "9": 3
+    },
+    "makes": {
+      "1": 1,
+      "5": 1,
+      "9": 1
+    },
+    "speed": {
+      "1": 1
+    },
+    "depend": {
+      "1": 1,
+      "3": 1
+    },
+    "real": {
+      "1": 1
+    },
+    "instead": {
+      "1": 1,
+      "3": 1,
+      "5": 1,
+      "6": 1
+    },
+    "refresh": {
+      "1": 1
+    },
+    "rate": {
+      "1": 1
+    },
+    "jump": {
+      "1": 1
+    },
+    "physics": {
+      "1": 1
+    },
+    "need": {
+      "1": 1
+    },
+    "two": {
+      "1": 1,
+      "5": 2,
+      "7": 3,
+      "11": 1
+    },
+    "variables": {
+      "1": 1
+    },
+    "vertical": {
+      "1": 1
+    },
+    "velocity": {
+      "1": 4
+    },
+    "gravity": {
+      "1": 2
+    },
+    "jumping": {
+      "1": 1
+    },
+    "sets": {
+      "1": 1
+    },
+    "negative": {
+      "1": 1
+    },
+    "adds": {
+      "1": 1
+    },
+    "position": {
+      "1": 2
+    },
+    "landing": {
+      "1": 1
+    },
+    "moment": {
+      "1": 1
+    },
+    "crosses": {
+      "1": 1
+    },
+    "ground": {
+      "1": 1
+    },
+    "line": {
+      "1": 1,
+      "8": 1
+    },
+    "simulation": {
+      "1": 1
+    },
+    "behind": {
+      "1": 1
+    },
+    "rex": {
+      "1": 1
+    },
+    "runner": {
+      "1": 1
+    },
+    "debouncing": {
+      "2": 4
+    },
+    "throttling": {
+      "2": 3
+    },
+    "both": {
+      "2": 1
+    },
+    "limit": {
+      "2": 1
+    },
+    "often": {
+      "2": 1,
+      "11": 1
+    },
+    "function": {
+      "2": 4,
+      "3": 1,
+      "6": 1,
+      "9": 2
+    },
+    "response": {
+      "2": 1,
+      "3": 3,
+      "4": 3,
+      "6": 1
+    },
+    "rapid": {
+      "2": 1
+    },
+    "events": {
+      "2": 3
+    },
+    "behave": {
+      "2": 1
+    },
+    "differently": {
+      "2": 1
+    },
+    "waits": {
+      "2": 1
+    },
+    "until": {
+      "2": 1
+    },
+    "stop": {
+      "2": 1
+    },
+    "timer": {
+      "2": 2,
+      "9": 1
+    },
+    "restarts": {
+      "2": 1
+    },
+    "call": {
+      "2": 1,
+      "3": 1,
+      "6": 2
+    },
+    "so": {
+      "2": 1,
+      "4": 1,
+      "6": 2,
+      "7": 1,
+      "11": 2
+    },
+    "once": {
+      "2": 2,
+      "9": 1
+    },
+    "after": {
+      "2": 3,
+      "3": 2,
+      "6": 1,
+      "9": 2
+    },
+    "quiet": {
+      "2": 1
+    },
+    "period": {
+      "2": 1
+    },
+    "most": {
+      "2": 1,
+      "9": 1
+    },
+    "interval": {
+      "2": 1
+    },
+    "no": {
+      "2": 1,
+      "3": 1,
+      "9": 1
+    },
+    "matter": {
+      "2": 1
+    },
+    "arrive": {
+      "2": 1
+    },
+    "autocomplete": {
+      "2": 1
+    },
+    "box": {
+      "2": 1,
+      "9": 1
+    },
+    "wants": {
+      "2": 1
+    },
+    "firing": {
+      "2": 1
+    },
+    "request": {
+      "2": 5,
+      "3": 3,
+      "4": 3
+    },
+    "keystroke": {
+      "2": 3
+    },
+    "sends": {
+      "2": 2
+    },
+    "character": {
+      "2": 1,
+      "7": 1
+    },
+    "wastes": {
+      "2": 1
+    },
+    "bandwidth": {
+      "2": 1
+    },
+    "can": {
+      "2": 1,
+      "3": 1
+    },
+    "render": {
+      "2": 1,
+      "9": 4
+    },
+    "responses": {
+      "2": 1
+    },
+    "out": {
+      "2": 1
+    },
+    "order": {
+      "2": 1,
+      "3": 1
+    },
+    "slow": {
+      "2": 1
+    },
+    "early": {
+      "2": 1
+    },
+    "resolves": {
+      "2": 1,
+      "4": 1
+    },
+    "later": {
+      "2": 1
+    },
+    "waiting": {
+      "2": 1,
+      "6": 1
+    },
+    "roughly": {
+      "2": 1
+    },
+    "last": {
+      "2": 1
+    },
+    "finished": {
+      "2": 1
+    },
+    "react": {
+      "2": 1,
+      "5": 1,
+      "9": 4,
+      "10": 2
+    },
+    "implementation": {
+      "2": 1
+    },
+    "useeffect": {
+      "2": 1,
+      "9": 1
+    },
+    "whose": {
+      "2": 1,
+      "9": 1
+    },
+    "cleanup": {
+      "2": 2,
+      "9": 1
+    },
+    "because": {
+      "2": 1,
+      "6": 1,
+      "7": 1
+    },
+    "effect": {
+      "2": 1,
+      "9": 1
+    },
+    "each": {
+      "2": 1,
+      "3": 1,
+      "5": 3,
+      "7": 2
+    },
+    "new": {
+      "2": 1
+    },
+    "cancels": {
+      "2": 1
+    },
+    "pending": {
+      "2": 1,
+      "6": 1
+    },
+    "timeout": {
+      "2": 1
+    },
+    "final": {
+      "2": 1,
+      "11": 1
+    },
+    "survives": {
+      "2": 1
+    },
+    "fire": {
+      "2": 1
+    },
+    "express": {
+      "3": 3
+    },
+    "middleware": {
+      "3": 6
+    },
+    "minimal": {
+      "3": 1
+    },
+    "web": {
+      "3": 1,
+      "8": 1
+    },
+    "framework": {
+      "3": 1
+    },
+    "node": {
+      "3": 1,
+      "8": 2
+    },
+    "js": {
+      "3": 1,
+      "8": 1
+    },
+    "app": {
+      "3": 1,
+      "4": 1
+    },
+    "essentially": {
+      "3": 1
+    },
+    "ordered": {
+      "3": 1
+    },
+    "functions": {
+      "3": 1
+    },
+    "receiving": {
+      "3": 1
+    },
+    "callback": {
+      "3": 1,
+      "6": 1
+    },
+    "inspect": {
+      "3": 1
+    },
+    "modify": {
+      "3": 1
+    },
+    "send": {
+      "3": 1
+    },
+    "hand": {
+      "3": 1
+    },
+    "control": {
+      "3": 1,
+      "4": 1,
+      "6": 1
+    },
+    "following": {
+      "3": 1
+    },
+    "matters": {
+      "3": 1
+    },
+    "logger": {
+      "3": 1
+    },
+    "registered": {
+      "3": 3
+    },
+    "routes": {
+      "3": 2
+    },
+    "sees": {
+      "3": 2
+    },
+    "requests": {
+      "3": 1,
+      "4": 1
+    },
+    "route": {
+      "3": 2
+    },
+    "handled": {
+      "3": 1
+    },
+    "body": {
+      "3": 1,
+      "4": 1
+    },
+    "parsers": {
+      "3": 1
+    },
+    "cors": {
+      "3": 1,
+      "4": 1
+    },
+    "headers": {
+      "3": 1,
+      "4": 1
+    },
+    "authentication": {
+      "3": 1
+    },
+    "checks": {
+      "3": 1
+    },
+    "all": {
+      "3": 2,
+      "4": 1,
+      "6": 1,
+      "9": 1,
+      "11": 1
+    },
+    "placed": {
+      "3": 1
+    },
+    "handlers": {
+      "3": 3
+    },
+    "end": {
+      "3": 1
+    },
+    "chain": {
+      "3": 1
+    },
+    "sending": {
+      "3": 1
+    },
+    "anything": {
+      "3": 1,
+      "6": 1
+    },
+    "acts": {
+      "3": 1
+    },
+    "fallback": {
+      "3": 1
+    },
+    "pages": {
+      "3": 1
+    },
+    "error": {
+      "3": 2,
+      "4": 1
+    },
+    "built": {
+      "3": 1
+    },
+    "handling": {
+      "3": 1
+    },
+    "recognised": {
+      "3": 1
+    },
+    "taking": {
+      "3": 1
+    },
+    "four": {
+      "3": 1
+    },
+    "arguments": {
+      "3": 1
+    },
+    "three": {
+      "3": 1,
+      "7": 2
+    },
+    "http": {
+      "4": 2
+    },
+    "lifecycle": {
+      "4": 1
+    },
+    "page": {
+      "4": 2,
+      "10": 1
+    },
+    "dns": {
+      "4": 1
+    },
+    "hostname": {
+      "4": 1
+    },
+    "ip": {
+      "4": 1
+    },
+    "address": {
+      "4": 1
+    },
+    "tcp": {
+      "4": 1
+    },
+    "connection": {
+      "4": 1
+    },
+    "opened": {
+      "4": 1
+    },
+    "tls": {
+      "4": 1
+    },
+    "negotiates": {
+      "4": 1
+    },
+    "encryption": {
+      "4": 1
+    },
+    "https": {
+      "4": 1
+    },
+    "sent": {
+      "4": 2
+    },
+    "arrives": {
+      "4": 1
+    },
+    "status": {
+      "4": 2
+    },
+    "code": {
+      "4": 1,
+      "6": 1,
+      "8": 1,
+      "9": 1,
+      "10": 1
+    },
+    "codes": {
+      "4": 1
+    },
+    "fall": {
+      "4": 1
+    },
+    "families": {
+      "4": 1
+    },
+    "means": {
+      "4": 4,
+      "9": 3
+    },
+    "success": {
+      "4": 1
+    },
+    "redirects": {
+      "4": 1
+    },
+    "client": {
+      "4": 1
+    },
+    "invalid": {
+      "4": 1
+    },
+    "resource": {
+      "4": 1
+    },
+    "exist": {
+      "4": 1
+    },
+    "server": {
+      "4": 2,
+      "8": 1
+    },
+    "itself": {
+      "4": 1
+    },
+    "failed": {
+      "4": 2
+    },
+    "treating": {
+      "4": 1
+    },
+    "network": {
+      "4": 1,
+      "6": 1
+    },
+    "frontend": {
+      "4": 1
+    },
+    "bug": {
+      "4": 1
+    },
+    "fetch": {
+      "4": 1
+    },
+    "rejects": {
+      "4": 1
+    },
+    "could": {
+      "4": 1
+    },
+    "made": {
+      "4": 1
+    },
+    "still": {
+      "4": 1,
+      "6": 1
+    },
+    "needs": {
+      "4": 1,
+      "7": 1
+    },
+    "explicit": {
+      "4": 1
+    },
+    "check": {
+      "4": 1
+    },
+    "ok": {
+      "4": 1
+    },
+    "property": {
+      "4": 1
+    },
+    "origin": {
+      "4": 4
+    },
+    "policy": {
+      "4": 1
+    },
+    "blocks": {
+      "4": 1,
+      "6": 1
+    },
+    "reading": {
+      "4": 1
+    },
+    "another": {
+      "4": 1,
+      "7": 1
+    },
+    "way": {
+      "4": 1
+    },
+    "opts": {
+      "4": 1
+    },
+    "using": {
+      "4": 1
+    },
+    "access": {
+      "4": 1
+    },
+    "allow": {
+      "4": 1
+    },
+    "header": {
+      "4": 1
+    },
+    "development": {
+      "4": 1
+    },
+    "proxy": {
+      "4": 1
+    },
+    "sidesteps": {
+      "4": 1
+    },
+    "issue": {
+      "4": 1
+    },
+    "entirely": {
+      "4": 1
+    },
+    "making": {
+      "4": 1
+    },
+    "believe": {
+      "4": 1
+    },
+    "lives": {
+      "4": 1
+    },
+    "data": {
+      "5": 1
+    },
+    "structure": {
+      "5": 1
+    },
+    "full": {
+      "5": 1
+    },
+    "text": {
+      "5": 1
+    },
+    "forward": {
+      "5": 1
+    },
+    "maps": {
+      "5": 2
+    },
+    "words": {
+      "5": 2
+    },
+    "contains": {
+      "5": 1
+    },
+    "flips": {
+      "5": 1
+    },
+    "around": {
+      "5": 1
+    },
+    "contain": {
+      "5": 2
+    },
+    "exactly": {
+      "5": 1
+    },
+    "question": {
+      "5": 1,
+      "11": 1
+    },
+    "asks": {
+      "5": 1
+    },
+    "building": {
+      "5": 1,
+      "10": 1
+    },
+    "pass": {
+      "5": 1
+    },
+    "job": {
+      "5": 1
+    },
+    "first": {
+      "5": 1,
+      "7": 2
+    },
+    "tokenize": {
+      "5": 1
+    },
+    "lowercase": {
+      "5": 1
+    },
+    "dropping": {
+      "5": 1
+    },
+    "punctuation": {
+      "5": 1
+    },
+    "very": {
+      "5": 1
+    },
+    "stopwords": {
+      "5": 1
+    },
+    "token": {
+      "5": 2
+    },
+    "append": {
+      "5": 1
+    },
+    "id": {
+      "5": 1,
+      "9": 1
+    },
+    "along": {
+      "5": 1
+    },
+    "times": {
+      "5": 1,
+      "11": 2
+    },
+    "appeared": {
+      "5": 1
+    },
+    "components": {
+      "5": 1,
+      "10": 1
+    },
+    "looks": {
+      "5": 1
+    },
+    "up": {
+      "5": 1
+    },
+    "lists": {
+      "5": 1
+    },
+    "unions": {
+      "5": 1
+    },
+    "cost": {
+      "5": 1
+    },
+    "stops": {
+      "5": 1,
+      "11": 1
+    },
+    "depending": {
+      "5": 2
+    },
+    "starts": {
+      "5": 1
+    },
+    "actually": {
+      "5": 1,
+      "11": 1
+    },
+    "why": {
+      "5": 1,
+      "6": 1
+    },
+    "engines": {
+      "5": 1,
+      "7": 1,
+      "11": 1
+    },
+    "offline": {
+      "5": 1
+    },
+    "online": {
+      "5": 1
+    },
+    "javascript": {
+      "6": 2,
+      "8": 3,
+      "10": 1
+    },
+    "event": {
+      "6": 4,
+      "9": 1
+    },
+    "single": {
+      "6": 1,
+      "7": 1,
+      "10": 1
+    },
+    "thread": {
+      "6": 2
+    },
+    "cannot": {
+      "6": 1,
+      "11": 1
+    },
+    "block": {
+      "6": 2
+    },
+    "while": {
+      "6": 2
+    },
+    "file": {
+      "6": 1
+    },
+    "runtime": {
+      "6": 1,
+      "8": 1
+    },
+    "keeps": {
+      "6": 1
+    },
+    "stack": {
+      "6": 2
+    },
+    "set": {
+      "6": 1
+    },
+    "queues": {
+      "6": 1
+    },
+    "moves": {
+      "6": 1
+    },
+    "between": {
+      "6": 1,
+      "7": 1
+    },
+    "empties": {
+      "6": 1
+    },
+    "queue": {
+      "6": 3
+    },
+    "promise": {
+      "6": 2
+    },
+    "callbacks": {
+      "6": 2
+    },
+    "live": {
+      "6": 2
+    },
+    "microtask": {
+      "6": 1
+    },
+    "drained": {
+      "6": 1
+    },
+    "completely": {
+      "6": 1
+    },
+    "else": {
+      "6": 1,
+      "11": 1
+    },
+    "timers": {
+      "6": 1
+    },
+    "io": {
+      "6": 1
+    },
+    "macrotask": {
+      "6": 1
+    },
+    "resolved": {
+      "6": 1
+    },
+    "immediately": {
+      "6": 1
+    },
+    "synchronous": {
+      "6": 2
+    },
+    "settimeout": {
+      "6": 1
+    },
+    "zero": {
+      "6": 1,
+      "11": 1
+    },
+    "async": {
+      "6": 1
+    },
+    "await": {
+      "6": 1
+    },
+    "syntax": {
+      "6": 1
+    },
+    "promises": {
+      "6": 1
+    },
+    "extra": {
+      "6": 1
+    },
+    "threads": {
+      "6": 1
+    },
+    "awaited": {
+      "6": 2
+    },
+    "expression": {
+      "6": 1
+    },
+    "suspends": {
+      "6": 1
+    },
+    "surrounding": {
+      "6": 1
+    },
+    "returns": {
+      "6": 1,
+      "9": 1
+    },
+    "other": {
+      "6": 1,
+      "7": 1
+    },
+    "proceeds": {
+      "6": 1
+    },
+    "long": {
+      "6": 1,
+      "11": 1
+    },
+    "contrast": {
+      "6": 1
+    },
+    "everything": {
+      "6": 1
+    },
+    "including": {
+      "6": 1
+    },
+    "rendering": {
+      "6": 1
+    },
+    "levenshtein": {
+      "7": 2
+    },
+    "distance": {
+      "7": 6
+    },
+    "also": {
+      "7": 1
+    },
+    "called": {
+      "7": 1,
+      "10": 1
+    },
+    "edit": {
+      "7": 2
+    },
+    "minimum": {
+      "7": 2
+    },
+    "insertions": {
+      "7": 1
+    },
+    "deletions": {
+      "7": 1
+    },
+    "substitutions": {
+      "7": 1
+    },
+    "needed": {
+      "7": 1
+    },
+    "turn": {
+      "7": 1
+    },
+    "string": {
+      "7": 2
+    },
+    "turning": {
+      "7": 1
+    },
+    "kitten": {
+      "7": 1
+    },
+    "sitting": {
+      "7": 1
+    },
+    "edits": {
+      "7": 2
+    },
+    "standard": {
+      "7": 1
+    },
+    "solution": {
+      "7": 1
+    },
+    "dynamic": {
+      "7": 1
+    },
+    "programming": {
+      "7": 1
+    },
+    "build": {
+      "7": 1
+    },
+    "table": {
+      "7": 2
+    },
+    "where": {
+      "7": 2
+    },
+    "cell": {
+      "7": 5
+    },
+    "holds": {
+      "7": 1
+    },
+    "characters": {
+      "7": 2
+    },
+    "plus": {
+      "7": 1
+    },
+    "above": {
+      "7": 2
+    },
+    "left": {
+      "7": 1
+    },
+    "diagonal": {
+      "7": 2
+    },
+    "costs": {
+      "7": 1
+    },
+    "nothing": {
+      "7": 1,
+      "11": 1
+    },
+    "match": {
+      "7": 1,
+      "11": 1
+    },
+    "answer": {
+      "7": 1
+    },
+    "sits": {
+      "7": 1
+    },
+    "bottom": {
+      "7": 1
+    },
+    "right": {
+      "7": 1,
+      "9": 1
+    },
+    "corner": {
+      "7": 1
+    },
+    "rows": {
+      "7": 1
+    },
+    "row": {
+      "7": 2
+    },
+    "depends": {
+      "7": 1
+    },
+    "use": {
+      "7": 1,
+      "8": 1,
+      "11": 1
+    },
+    "spelling": {
+      "7": 1
+    },
+    "correction": {
+      "7": 1
+    },
+    "missing": {
+      "7": 1
+    },
+    "closest": {
+      "7": 1
+    },
+    "vocabulary": {
+      "7": 1
+    },
+    "within": {
+      "7": 1
+    },
+    "becomes": {
+      "7": 1
+    },
+    "did": {
+      "7": 1
+    },
+    "mean": {
+      "7": 1
+    },
+    "suggestion": {
+      "7": 1
+    },
+    "info": {
+      "8": 1,
+      "10": 1
+    },
+    "cross": {
+      "8": 1
+    },
+    "platform": {
+      "8": 1
+    },
+    "open": {
+      "8": 1
+    },
+    "source": {
+      "8": 1,
+      "9": 1
+    },
+    "environment": {
+      "8": 1
+    },
+    "executes": {
+      "8": 1
+    },
+    "outside": {
+      "8": 1
+    },
+    "allowing": {
+      "8": 1
+    },
+    "developers": {
+      "8": 1
+    },
+    "write": {
+      "8": 1
+    },
+    "command": {
+      "8": 1
+    },
+    "tools": {
+      "8": 1
+    },
+    "side": {
+      "8": 1,
+      "9": 1
+    },
+    "scripts": {
+      "8": 1
+    },
+    "hooks": {
+      "9": 2
+    },
+    "let": {
+      "9": 1
+    },
+    "component": {
+      "9": 1
+    },
+    "hold": {
+      "9": 1
+    },
+    "state": {
+      "9": 1
+    },
+    "run": {
+      "9": 5
+    },
+    "effects": {
+      "9": 1
+    },
+    "without": {
+      "9": 1
+    },
+    "being": {
+      "9": 1
+    },
+    "rewritten": {
+      "9": 1
+    },
+    "class": {
+      "9": 1
+    },
+    "usestate": {
+      "9": 1
+    },
+    "current": {
+      "9": 1
+    },
+    "setter": {
+      "9": 2
+    },
+    "calling": {
+      "9": 1
+    },
+    "schedules": {
+      "9": 1
+    },
+    "re": {
+      "9": 2
+    },
+    "rather": {
+      "9": 1
+    },
+    "than": {
+      "9": 1
+    },
+    "mutating": {
+      "9": 1
+    },
+    "place": {
+      "9": 1
+    },
+    "painted": {
+      "9": 1
+    },
+    "dependency": {
+      "9": 1
+    },
+    "controls": {
+      "9": 1
+    },
+    "empty": {
+      "9": 1
+    },
+    "mount": {
+      "9": 1
+    },
+    "populated": {
+      "9": 1
+    },
+    "whenever": {
+      "9": 1
+    },
+    "those": {
+      "9": 1
+    },
+    "values": {
+      "9": 1
+    },
+    "changes": {
+      "9": 2
+    },
+    "returning": {
+      "9": 1
+    },
+    "registers": {
+      "9": 1
+    },
+    "calls": {
+      "9": 1
+    },
+    "unmount": {
+      "9": 1
+    },
+    "forgetting": {
+      "9": 1
+    },
+    "cancel": {
+      "9": 1
+    },
+    "remove": {
+      "9": 1
+    },
+    "listener": {
+      "9": 1
+    },
+    "leaks": {
+      "9": 1
+    },
+    "useref": {
+      "9": 1
+    },
+    "stores": {
+      "9": 1
+    },
+    "mutable": {
+      "9": 1
+    },
+    "do": {
+      "9": 1
+    },
+    "trigger": {
+      "9": 1
+    },
+    "tool": {
+      "9": 1
+    },
+    "holding": {
+      "9": 1
+    },
+    "element": {
+      "9": 1
+    },
+    "any": {
+      "9": 1
+    },
+    "mutates": {
+      "9": 1
+    },
+    "library": {
+      "10": 1
+    },
+    "user": {
+      "10": 1
+    },
+    "interfaces": {
+      "10": 1
+    },
+    "lets": {
+      "10": 1
+    },
+    "compose": {
+      "10": 1
+    },
+    "complex": {
+      "10": 1
+    },
+    "uis": {
+      "10": 1
+    },
+    "isolated": {
+      "10": 1
+    },
+    "pieces": {
+      "10": 1
+    },
+    "incredibly": {
+      "10": 1
+    },
+    "popular": {
+      "10": 1
+    },
+    "applications": {
+      "10": 1
+    },
+    "tf": {
+      "11": 2
+    },
+    "idf": {
+      "11": 2
+    },
+    "ranking": {
+      "11": 2
+    },
+    "stands": {
+      "11": 1
+    },
+    "term": {
+      "11": 6
+    },
+    "frequency": {
+      "11": 6
+    },
+    "inverse": {
+      "11": 3
+    },
+    "plain": {
+      "11": 1
+    },
+    "keyword": {
+      "11": 1
+    },
+    "containing": {
+      "11": 2
+    },
+    "ones": {
+      "11": 1
+    },
+    "about": {
+      "11": 1
+    },
+    "counts": {
+      "11": 2
+    },
+    "appears": {
+      "11": 1
+    },
+    "raw": {
+      "11": 1
+    },
+    "favour": {
+      "11": 1
+    },
+    "count": {
+      "11": 2
+    },
+    "normally": {
+      "11": 1
+    },
+    "divided": {
+      "11": 2
+    },
+    "length": {
+      "11": 1
+    },
+    "measures": {
+      "11": 1
+    },
+    "rarity": {
+      "11": 1
+    },
+    "across": {
+      "11": 1
+    },
+    "usually": {
+      "11": 1
+    },
+    "logarithm": {
+      "11": 1
+    },
+    "total": {
+      "11": 1
+    },
+    "gives": {
+      "11": 1
+    },
+    "score": {
+      "11": 2
+    },
+    "high": {
+      "11": 1
+    },
+    "frequent": {
+      "11": 1
+    },
+    "here": {
+      "11": 1
+    },
+    "rare": {
+      "11": 1
+    },
+    "everywhere": {
+      "11": 1
+    },
+    "appearing": {
+      "11": 1
+    },
+    "near": {
+      "11": 1
+    },
+    "contributes": {
+      "11": 1
+    },
+    "almost": {
+      "11": 1
+    },
+    "summing": {
+      "11": 1
+    },
+    "scores": {
+      "11": 1
+    },
+    "produces": {
+      "11": 1
+    },
+    "relevance": {
+      "11": 1
+    },
+    "used": {
+      "11": 1
+    },
+    "sort": {
+      "11": 1
+    },
+    "results": {
+      "11": 1
+    },
+    "modern": {
+      "11": 1
+    },
+    "bm25": {
+      "11": 1
+    },
+    "refinement": {
+      "11": 1
+    },
+    "saturates": {
+      "11": 1
+    },
+    "repeating": {
+      "11": 1
+    },
+    "hundred": {
+      "11": 1
+    },
+    "helping": {
+      "11": 1
+    }
   }
-]
+}

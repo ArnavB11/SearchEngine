@@ -1,14 +1,30 @@
+// The wordmark. Each letter is its own <span> so the CSS can stagger a
+// drop-in animation across them, and so hovering bounces one letter at a time.
+
+const LETTERS = [
+  { char: 's', color: 'var(--blue)' },
+  { char: 'e', color: 'var(--red)' },
+  { char: 'a', color: 'var(--yellow)' },
+  { char: 'r', color: 'var(--blue)' },
+  { char: 'c', color: 'var(--green)' },
+  { char: 'h', color: 'var(--red)' },
+];
+
 export default function Logo() {
   return (
-    <div style={{ textAlign: 'center', marginBottom: '25px' }}>
-      <h1 style={{ fontSize: '3.5rem', fontFamily: 'sans-serif', margin: 0, fontWeight: '500', letterSpacing: '-1.5px' }}>
-        <span style={{ color: '#4285F4' }}>s</span>
-        <span style={{ color: '#EA4335' }}>e</span>
-        <span style={{ color: '#FBBC05' }}>a</span>
-        <span style={{ color: '#4285F4' }}>r</span>
-        <span style={{ color: '#34A853' }}>c</span>
-        <span style={{ color: '#EA4335' }}>h</span>
-        <span style={{ color: '#5f6368' }}>.exe</span>
+    <div style={{ textAlign: 'center' }}>
+      <h1 className="logo">
+        {LETTERS.map((letter, i) => (
+          <span
+            key={i}
+            className="logo__letter"
+            // 60ms apart, so the letters land one after another rather than together.
+            style={{ color: letter.color, animationDelay: `${i * 60}ms` }}
+          >
+            {letter.char}
+          </span>
+        ))}
+        <span className="logo__suffix">.exe</span>
       </h1>
     </div>
   );

@@ -1,166 +1,234 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Logo from './components/Logo';
 import SearchBar from './components/SearchBar';
 import DinoGame from './components/DinoGame';
+import SearchResults, { ResultsSkeleton } from './components/SearchResults';
+import Highlight from './components/Highlight';
 
-function App() {
+// A few queries to show off on the landing page. They double as a hint about
+// what is actually in the index.
+const EXAMPLE_QUERIES = ['inverted index', 'tf-idf', 'react hooks', 'event loop', 'big o'];
+
+export default function App() {
   const [playDino, setPlayDino] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [theme, setTheme] = useState(
+    // Remember the choice, but start from whatever the operating system prefers.
+    () =>
+      localStorage.getItem('theme') ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  );
 
-  // The History Stack System
-  const [history, setHistory] = useState([{ view: 'home', data: null }]);
+  // --- Browser-style history stack ----------------------------------------
+  // Rather than pull in a router, the app keeps its own stack of views plus a
+  // pointer into it. Back and forward just move the pointer, which is exactly
+  // how a browser's session history works.
+  const [history, setHistory] = useState([{ view: 'home' }]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const current = history[currentIndex];
 
-  const currentView = history[currentIndex];
-
-  // Navigation Helpers
-  const navigate = (newViewState) => {
-    const newHistory = history.slice(0, currentIndex + 1);
-    newHistory.push(newViewState);
-    setHistory(newHistory);
-    setCurrentIndex(newHistory.length - 1);
+  const navigate = (nextView) => {
+    // Navigating after going back discards the forward entries, same as a browser.
+    const trimmed = history.slice(0, currentIndex + 1);
+    setHistory([...trimmed, nextView]);
+    setCurrentIndex(trimmed.length);
   };
 
-  const goBack = () => { if (currentIndex > 0) setCurrentIndex(currentIndex - 1); };
-  const goForward = () => { if (currentIndex < history.length - 1) setCurrentIndex(currentIndex + 1); };
-  const goHome = () => navigate({ view: 'home', data: null });
+  const goBack = () => currentIndex > 0 && setCurrentIndex(currentIndex - 1);
+  const goForward = () => currentIndex < history.length - 1 && setCurrentIndex(currentIndex + 1);
+  const goHome = () => navigate({ view: 'home' });
 
-  // API Handlers
-  const handleSearch = async (query) => {
+  // Apply the theme by setting one attribute on <html>; all the colours are CSS
+  // variables that key off it, so no component needs to know about theming.
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // Corpus size for the footer. Fetched once; failure is not worth reporting.
+  useEffect(() => {
+    fetch('/api/stats')
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setStats)
+      .catch(() => {});
+  }, []);
+
+  // --- API calls ----------------------------------------------------------
+  const runSearch = async (query, page = 1) => {
     setIsLoading(true);
     setError(null);
+
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(
+        `/api/search?q=${encodeURIComponent(query)}&page=${page}`,
+      );
+      // fetch only rejects on a network failure, so a 500 still lands here as a
+      // resolved promise. The status has to be checked explicitly.
       if (!response.ok) throw new Error(`Search failed (${response.status})`);
+
       const data = await response.json();
-      navigate({ view: 'results', data: data.results, query: query });
+      navigate({ view: 'results', query, ...data });
     } catch {
-      setError('Could not reach the search backend. Make sure it is running on port 5000.');
+      setError('Could not reach the search backend. Is it running on port 5000?');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFileClick = async (filename) => {
+  const openFile = async (filename) => {
     setIsLoading(true);
     setError(null);
+
     try {
       const response = await fetch(`/api/file/${encodeURIComponent(filename)}`);
       if (!response.ok) throw new Error(`File fetch failed (${response.status})`);
-      const data = await response.json();
-      navigate({ view: 'file', data: data });
+
+      const doc = await response.json();
+      // Carry the current query's terms through so the open document can keep
+      // the matched words highlighted.
+      navigate({ view: 'file', doc, terms: current.terms || [] });
     } catch {
-      setError('Could not load that file. Make sure the backend is running on port 5000.');
+      setError('Could not load that document.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', padding: '20px', alignItems: 'center' }}>
-      
-      {/* Top Search Bar & Navigation (Appears on Results and File pages) */}
-      {currentView.view !== 'home' && (
-        <div style={{ width: '100%', display: 'flex', gap: '20px', alignItems: 'center', borderBottom: '1px solid #ebebeb', paddingBottom: '20px', marginBottom: '20px' }}>
-           
-           {/* Back / Forward Buttons */}
-           <div style={{ display: 'flex', gap: '10px' }}>
-             <button onClick={goBack} disabled={currentIndex === 0} style={{ cursor: currentIndex === 0 ? 'not-allowed' : 'pointer', background: 'none', border: 'none', fontSize: '20px', color: currentIndex === 0 ? '#ccc' : '#5f6368' }}>&#8592;</button>
-             <button onClick={goForward} disabled={currentIndex === history.length - 1} style={{ cursor: currentIndex === history.length - 1 ? 'not-allowed' : 'pointer', background: 'none', border: 'none', fontSize: '20px', color: currentIndex === history.length - 1 ? '#ccc' : '#5f6368' }}>&#8594;</button>
-           </div>
+    <div className="app">
+      <button
+        className="theme-toggle"
+        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        title="Toggle theme"
+      >
+        {theme === 'dark' ? '☀' : '☾'}
+      </button>
 
-           {/* Clickable Home Logo */}
-           <h2 
-            onClick={goHome} 
-            style={{margin: 0, color: '#4285F4', fontSize: '1.5rem', letterSpacing: '-0.5px', cursor: 'pointer'}}
-            title="Go to Homepage"
-           >
-             S.exe
-           </h2>
-           
-           <div style={{ flex: 1, maxWidth: '600px' }}>
-             <SearchBar onSearch={handleSearch} />
-           </div>
-        </div>
-      )}
-
-      {/* Main Centered Landing Page */}
-      {currentView.view === 'home' && (
-        <div style={{ marginTop: '20vh', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Logo />
-          <SearchBar onSearch={handleSearch} />
-          
-          <div style={{ marginTop: '30px' }}>
-            <button 
-              onClick={() => setPlayDino(true)} 
-              style={{ padding: '10px 24px', cursor: 'pointer', backgroundColor: '#f8f9fa', border: '1px solid #f8f9fa', borderRadius: '4px', color: '#3c4043', fontSize: '14px', transition: 'all 0.2s ease' }}
-              onMouseOver={(e) => { e.target.style.border = '1px solid #dadce0'; e.target.style.boxShadow = '0 1px 1px rgba(0,0,0,.1)'; }}
-              onMouseOut={(e) => { e.target.style.border = '1px solid #f8f9fa'; e.target.style.boxShadow = 'none'; }}
+      {/* Sticky header, on every page except the landing page */}
+      {current.view !== 'home' && (
+        <header className="header">
+          <div className="nav-buttons">
+            <button
+              className="icon-button"
+              onClick={goBack}
+              disabled={currentIndex === 0}
+              aria-label="Back"
             >
-              DinoGame
+              &#8592;
+            </button>
+            <button
+              className="icon-button"
+              onClick={goForward}
+              disabled={currentIndex === history.length - 1}
+              aria-label="Forward"
+            >
+              &#8594;
             </button>
           </div>
+
+          <button className="header__logo" onClick={goHome} title="Home">
+            <span style={{ color: 'var(--blue)' }}>s</span>
+            <span style={{ color: 'var(--red)' }}>.</span>
+            <span style={{ color: 'var(--yellow)' }}>e</span>
+            <span style={{ color: 'var(--green)' }}>x</span>
+            <span style={{ color: 'var(--blue)' }}>e</span>
+          </button>
+
+          <div className="header__search">
+            {/* Keying on the query makes React build a fresh SearchBar whenever
+                the query changes, so the input shows the query that produced
+                the results currently on screen. */}
+            <SearchBar
+              key={current.query || ''}
+              initialQuery={current.query || ''}
+              onSearch={runSearch}
+            />
+          </div>
+        </header>
+      )}
+
+      {/* Landing page */}
+      {current.view === 'home' && (
+        <main className="home">
+          <Logo />
+          <p className="tagline">
+            A search engine built from scratch: inverted index, TF-IDF ranking,
+            fuzzy spell correction.
+          </p>
+
+          <SearchBar onSearch={runSearch} />
+
+          <div className="button-row">
+            {EXAMPLE_QUERIES.map((query) => (
+              <button key={query} className="chip" onClick={() => runSearch(query)}>
+                {query}
+              </button>
+            ))}
+          </div>
+
+          <div className="button-row">
+            <button className="button" onClick={() => setPlayDino(true)}>
+              🦖 Play T-Rex Runner
+            </button>
+          </div>
+        </main>
+      )}
+
+      {/* Results and document pages */}
+      {current.view !== 'home' && (
+        <main className="page">
+          {error && <div className="error">⚠ {error}</div>}
+
+          {isLoading && <ResultsSkeleton />}
+
+          {!isLoading && current.view === 'results' && (
+            <SearchResults
+              search={current}
+              onOpenFile={openFile}
+              onSearch={runSearch}
+              onPageChange={(page) => runSearch(current.query, page)}
+            />
+          )}
+
+          {!isLoading && current.view === 'file' && (
+            <article className="doc">
+              <h1 className="doc__title">{current.doc.title}</h1>
+              <p className="doc__meta">
+                data / {current.doc.filename} &middot; {current.doc.wordCount} words
+              </p>
+
+              <div className="doc__summary">
+                <strong>Extracted summary</strong>
+                <p>{current.doc.summary}</p>
+              </div>
+
+              {/* The words that matched stay highlighted in the full text, so
+                  the reader can see why this document came back. */}
+              <div className="doc__body">
+                <Highlight text={current.doc.content} terms={current.terms} />
+              </div>
+            </article>
+          )}
+        </main>
+      )}
+
+      {/* Errors on the landing page have no <main> to live in, so render here. */}
+      {current.view === 'home' && error && (
+        <div className="page">
+          <div className="error">⚠ {error}</div>
         </div>
       )}
 
-      {/* Modal Game Panel */}
       {playDino && <DinoGame onClose={() => setPlayDino(false)} />}
 
-      {/* Error Banner */}
-      {error && (
-        <div style={{ width: '600px', maxWidth: '100%', margin: '10px 0', padding: '12px 16px', backgroundColor: '#fce8e6', color: '#c5221f', borderRadius: '8px', fontSize: '14px' }}>
-          {error}
-        </div>
-      )}
-
-      {/* Loading Indicator */}
-      {isLoading && (
-        <p style={{ color: '#70757a', fontSize: '14px' }}>Searching…</p>
-      )}
-
-      {/* Search Results View */}
-      {currentView.view === 'results' && (
-        <div style={{ width: '600px', maxWidth: '100%', alignSelf: 'flex-start', marginLeft: '10%' }}>
-          <p style={{ color: '#70757a', fontSize: '14px' }}>Found {currentView.data.length} results for "{currentView.query}"</p>
-          {currentView.data.length === 0 && (
-            <p style={{ color: '#4d5156' }}>
-              No documents matched your search. Try a different keyword.
-            </p>
-          )}
-          {currentView.data.map((result) => (
-            <div key={result.filename} style={{ marginBottom: '25px' }}>
-              <span style={{ fontSize: '14px', color: '#202124' }}>data/{result.filename}</span>
-              <h3 
-                onClick={() => handleFileClick(result.filename)}
-                style={{ color: '#1a0dab', margin: '4px 0', cursor: 'pointer', fontSize: '20px', fontWeight: '400', textDecoration: 'none' }}
-                onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
-                onMouseOut={(e) => e.target.style.textDecoration = 'none'}
-              >
-                {result.filename}
-              </h3>
-              <p style={{ color: '#4d5156', margin: 0, lineHeight: '1.58' }}>{result.summary}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Single File View */}
-      {currentView.view === 'file' && currentView.data && (
-        <div style={{ width: '600px', maxWidth: '100%', alignSelf: 'flex-start', marginLeft: '10%' }}>
-          <h2 style={{ marginTop: 0 }}>{currentView.data.filename}</h2>
-          <div style={{ backgroundColor: '#f1f3f4', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-            <strong>Generated Summary:</strong>
-            <p style={{ margin: '10px 0 0 0' }}>{currentView.data.summary}</p>
-          </div>
-          <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
-            {currentView.data.content}
-          </div>
-        </div>
-      )}
-
+      <footer className="footer">
+        {stats
+          ? `${stats.documents} documents · ${stats.terms} indexed terms · ${stats.words} words`
+          : 'search.exe'}
+      </footer>
     </div>
   );
 }
-
-export default App;

@@ -1,0 +1,5 @@
+Express is a minimal web framework for Node.js. An Express app is essentially an ordered list of middleware functions, each receiving the request, the response, and a next callback. A middleware can inspect or modify the request, send a response, or call next to hand control to the following function.
+
+Order matters. A logger registered before the routes sees every request; one registered after them only sees requests no route handled. Body parsers, CORS headers, and authentication checks are all just middleware placed before the handlers that depend on them.
+
+Route handlers are middleware that end the chain by sending a response. Anything registered after all routes acts as a fallback, which is how 404 pages and error handlers are built. An error handling middleware is recognised by taking four arguments instead of three.

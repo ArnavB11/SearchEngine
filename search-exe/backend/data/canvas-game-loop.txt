@@ -1,0 +1,5 @@
+An HTML canvas animation is a loop that clears the frame, updates the world, and draws it again. requestAnimationFrame is the browser API for scheduling that loop; it fires just before the next repaint and pauses automatically when the tab is hidden, which setInterval does not.
+
+The important detail is delta time. If positions move by a fixed number of pixels per frame, the game runs twice as fast on a 120hz monitor as on a 60hz one. Measuring the milliseconds elapsed since the previous frame and multiplying every movement by that value makes the speed depend on real time instead of refresh rate.
+
+Jump physics need only two variables: a vertical velocity and a gravity constant. Jumping sets the velocity to a negative number, every frame adds gravity to the velocity and the velocity to the position, and landing is the moment the position crosses the ground line. That is the whole simulation behind the T-Rex runner.
