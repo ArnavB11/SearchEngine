@@ -1,0 +1,15 @@
+# Excluded from the build context. See the backend's .dockerignore for why this
+# matters.
+
+node_modules
+.git
+.gitignore
+
+# Rebuilt by `npm run build` inside the image. Copying a stale local build in
+# would waste context and risk shipping it.
+dist
+
+Dockerfile
+.dockerignore
+*.log
+.env

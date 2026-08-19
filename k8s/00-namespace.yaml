@@ -1,0 +1,9 @@
+# A namespace is a scope for names and a boundary for quotas, network policy and
+# access control. Putting the app in its own namespace instead of `default` means
+# `kubectl delete namespace search-exe` cleans up every trace of it in one go.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: search-exe
+  labels:
+    app.kubernetes.io/name: search-exe

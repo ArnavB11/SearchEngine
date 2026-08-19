@@ -1,0 +1,19 @@
+# Everything here is excluded from the build context - the set of files sent to
+# the Docker daemon. A smaller context means faster builds, and it stops local
+# junk from busting the layer cache or leaking into the image.
+
+node_modules
+.git
+.gitignore
+
+# Rebuilt inside the image by `node ingest.js`, so the image never depends on
+# whatever happened to be committed.
+searchIndex.json
+
+# Not needed to run the server.
+*.test.js
+Dockerfile
+.dockerignore
+
+.env
+*.log

@@ -81,6 +81,32 @@ app.get('/api/file/:filename', (req, res) => {
   });
 });
 
+// --- Probes -------------------------------------------------------------
+// Two endpoints, because "is it alive" and "can it serve traffic" are different
+// questions, and an orchestrator reacts to them differently.
+
+// Liveness: is the process still running? If this stops answering, the
+// container is wedged and Kubernetes should RESTART it. It deliberately checks
+// nothing else - a liveness probe that fails for an external reason causes
+// restart loops that make an outage worse.
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', uptimeSeconds: Math.round(process.uptime()) });
+});
+
+// Readiness: can THIS instance answer a search right now? An instance with no
+// index loaded is running fine but has nothing to serve, so Kubernetes should
+// take it out of the Service's load balancer rather than restart it, and put it
+// back when the index appears.
+app.get('/api/ready', (req, res) => {
+  const db = getDb();
+
+  if (db.documents.length === 0) {
+    return res.status(503).json({ status: 'no index', documents: 0 });
+  }
+
+  res.json({ status: 'ready', documents: db.documents.length });
+});
+
 // GET /api/stats  ->  corpus size, shown in the UI footer
 app.get('/api/stats', (req, res) => {
   const db = getDb();

@@ -1,0 +1,68 @@
+# ---------------------------------------------------------------------------
+# Horizontal scaling: add pods under load, remove them when it passes.
+#
+# "Horizontal" as opposed to vertical - more copies rather than a bigger machine.
+# It is the reason the app is built as several small stateless replicas behind a
+# Service: any pod can serve any request, so adding one immediately helps.
+#
+# This works only because the containers declare resource *requests*. Utilisation
+# is measured as usage divided by request, so with no request there is nothing to
+# compute a percentage against and the autoscaler cannot act.
+#
+# It also needs a metrics source in the cluster:
+#     minikube addons enable metrics-server
+# ---------------------------------------------------------------------------
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend
+  namespace: search-exe
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+
+  minReplicas: 2
+  maxReplicas: 6
+
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          # Aim to keep average CPU at 70% of the request. Deliberately not 100%:
+          # headroom is what absorbs a spike during the ~15s it takes a new pod
+          # to start and pass its readiness probe.
+          averageUtilization: 70
+
+  behavior:
+    scaleUp:
+      # React quickly to load arriving.
+      stabilizationWindowSeconds: 30
+    scaleDown:
+      # And slowly to it leaving, so a brief lull does not remove capacity that
+      # is needed again a minute later. Flapping between replica counts is worse
+      # than running one pod too many.
+      stabilizationWindowSeconds: 300
+
+---
+# ---------------------------------------------------------------------------
+# A PodDisruptionBudget guards against VOLUNTARY disruption - a node being
+# drained for an upgrade, for instance. Without one, a drain can evict every
+# backend pod at once and take the API down even though nothing has failed.
+#
+# This says: whatever else happens, keep at least one backend pod serving.
+# ---------------------------------------------------------------------------
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend
+  namespace: search-exe
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: search-exe
+      app.kubernetes.io/component: backend

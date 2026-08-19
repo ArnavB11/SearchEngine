@@ -1,0 +1,77 @@
+# Run the whole project with one command:
+#
+#     docker compose up --build
+#
+# Then open http://localhost:8080
+#
+# Nothing needs to be installed but Docker. No Node, no npm install, no matching
+# versions - each image carries its own runtime and its own dependencies.
+
+name: search-exe
+
+services:
+  backend:
+    build: ./search-exe/backend
+    image: search-exe-backend:0.2.0
+
+    # Deliberately not published to the host. Only the frontend needs to reach
+    # the API, and it does so over the private network compose creates,
+    # addressing it by service name. Exposing only the edge is the same
+    # reasoning behind a ClusterIP Service in the Kubernetes manifests.
+    #
+    # To poke at the API directly, add:  ports: ["5000:5000"]
+    expose:
+      - "5000"
+
+    environment:
+      PORT: "5000"
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:5000/api/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+    restart: unless-stopped
+
+    # A container that only reads its own files has no reason to be able to
+    # write to its filesystem. If it is ever compromised, an attacker cannot
+    # drop a payload on disk.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  frontend:
+    build: ./search-exe/frontend
+    image: search-exe-frontend:0.2.0
+
+    ports:
+      # host:container - the container listens on 8080 because it runs as a
+      # non-root user, which cannot bind port 80.
+      - "8080:8080"
+
+    environment:
+      # Compose runs a DNS server for the project network, so "backend" resolves
+      # to that container's current IP. Nothing hardcodes an address.
+      BACKEND_URL: http://backend:5000
+
+    depends_on:
+      backend:
+        # Waits for the healthcheck above to pass, not merely for the container
+        # to exist. Without this the first page load could reach a backend whose
+        # index has not loaded yet.
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
